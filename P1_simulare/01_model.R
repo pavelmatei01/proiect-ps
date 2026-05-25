@@ -16,7 +16,6 @@
 #  secundare nedorite (principiul "cod = functii, nu scripturi care ruleaza
 #  singure"). Reproductibilitatea (set.seed) se gestioneaza in 03_simulare.R.
 # ============================================================================
-install.packages("languageserver")
 
 # ----------------------------------------------------------------------------
 #  ASPECTE TEORETICE — DE CE ACESTE DISTRIBUTII?  (citit de C pentru documentatie)
@@ -232,27 +231,27 @@ prob_teoretica_cel_putin_un_incident <- function(lambda, p) {
 }
 
 
-----------------------------------------------------------------------------
- (E) MIC TEST RAPID (rulati manual pentru a verifica modelul)
-----------------------------------------------------------------------------
- Lasam aceste linii COMENTATE ca sa nu ruleze automat la `source("01_model.R")`.
- Persoana A le poate de-comenta temporar ca sa verifice ca totul functioneaza.
-
- set.seed(123)                                   # reproductibilitate
- zi <- genereaza_zi(p = 0.005, mu = 400, size = 20)
- print(zi)                                       # ~400 curse, cateva suspecte
-
- # Comparatie rapida medie vs. varianta pentru a "vedea" supra-dispersia:
- esantion_nb  <- replicate(5000, genereaza_curse_zi("nbinom",  mu = 400, size = 20))
- esantion_poi <- replicate(5000, genereaza_curse_zi("poisson", mu = 400))
- cat("NBinom : media =", mean(esantion_nb),  " varianta =", var(esantion_nb),  "\n")
- cat("Poisson: media =", mean(esantion_poi), " varianta =", var(esantion_poi), "\n")
- # Veti observa: la Poisson varianta ~ media (~400); la NBinom varianta >> media.
-
- # Verificare teorie vs. empiric pentru P(cel putin un incident):
- emp <- mean(replicate(10000, genereaza_zi(p = 0.005, mu = 400, size = 20)$curse_suspecte >= 1))
- teo <- prob_teoretica_cel_putin_un_incident(lambda = 400, p = 0.005)
- cat("P(S>=1) empiric =", emp, " | teoretic (Poisson) =", teo, "\n")
- # Nu vor fi IDENTICE: empiricul foloseste NBinom (supra-dispersat), teoreticul
- # presupune Poisson. Aceasta diferenta este un punct bun de discutie!
-============================================================================
+# ----------------------------------------------------------------------------
+#  (E) MIC TEST RAPID (rulati manual pentru a verifica modelul)
+# ----------------------------------------------------------------------------
+#  Lasam aceste linii COMENTATE ca sa nu ruleze automat la `source("01_model.R")`.
+#  Persoana A le poate de-comenta temporar ca sa verifice ca totul functioneaza.
+#
+#  set.seed(123)                                   # reproductibilitate
+#  zi <- genereaza_zi(p = 0.005, mu = 400, size = 20)
+#  print(zi)                                       # ~400 curse, cateva suspecte
+#
+#  # Comparatie rapida medie vs. varianta pentru a "vedea" supra-dispersia:
+#  esantion_nb  <- replicate(5000, genereaza_curse_zi("nbinom",  mu = 400, size = 20))
+#  esantion_poi <- replicate(5000, genereaza_curse_zi("poisson", mu = 400))
+#  cat("NBinom : media =", mean(esantion_nb),  " varianta =", var(esantion_nb),  "\n")
+#  cat("Poisson: media =", mean(esantion_poi), " varianta =", var(esantion_poi), "\n")
+#  # Veti observa: la Poisson varianta ~ media (~400); la NBinom varianta >> media.
+#
+#  # Verificare teorie vs. empiric pentru P(cel putin un incident):
+#  emp <- mean(replicate(10000, genereaza_zi(p = 0.005, mu = 400, size = 20)$curse_suspecte >= 1))
+#  teo <- prob_teoretica_cel_putin_un_incident(lambda = 400, p = 0.005)
+#  cat("P(S>=1) empiric =", emp, " | teoretic (Poisson) =", teo, "\n")
+#  # Nu vor fi IDENTICE: empiricul foloseste NBinom (supra-dispersat), teoreticul
+#  # presupune Poisson. Aceasta diferenta este un punct bun de discutie!
+# ============================================================================
