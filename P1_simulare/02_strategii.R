@@ -163,7 +163,9 @@ strategie_fixa <- function(N, S, f) {
 strategie_adaptiva <- function(N, S, f_min, f_max, N_min, N_max) {
 
   # ---- Validare ----
-  if (f_min < 0 || f_max > 1) stop("f_min si f_max trebuie sa fie in [0, 1].")
+  if (f_min < 0 || f_min > 1 || f_max < 0 || f_max > 1) {
+    stop("f_min si f_max trebuie sa fie in [0, 1].")
+  }
   if (f_min > f_max)          stop("f_min nu poate fi mai mare decat f_max.")
   if (N_min >= N_max)         stop("N_min trebuie sa fie strict mai mic decat N_max.")
 
@@ -210,14 +212,14 @@ strategie_adaptiva <- function(N, S, f_min, f_max, N_min, N_max) {
 # source("01_model.R")
 # set.seed(123)
 # zi <- genereaza_zi(mu = 400, size = 20, p = 0.005)
-# cat("Curse:", zi$N, " Incidente:", zi$S, "\n")
+# cat("Curse:", zi$total_curse, " Incidente:", zi$curse_suspecte, "\n")
 #
-# rez_fix <- strategie_fixa(zi$N, zi$S, f = 0.10)
+# rez_fix <- strategie_fixa(zi$total_curse, zi$curse_suspecte, f = 0.10)
 # cat("FIX 10%:    verificate =", rez_fix$verificate,
 #     " detectate =", rez_fix$detectate,
 #     " nedetectate =", rez_fix$nedetectate, "\n")
 #
-# rez_adapt <- strategie_adaptiva(zi$N, zi$S,
+# rez_adapt <- strategie_adaptiva(zi$total_curse, zi$curse_suspecte,
 #                                 f_min = 0.05, f_max = 0.30,
 #                                 N_min = 300, N_max = 500)
 # cat("ADAPTIV:    verificate =", rez_adapt$verificate,
