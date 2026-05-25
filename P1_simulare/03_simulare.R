@@ -254,7 +254,7 @@ studiu_procent_verificare <- function(p,
     f <- procente[k]
     # Construim "din mers" o strategie fixa la procentul f. Inchidem f intr-o
     # functie de un singur argument-pereche (N,S) - exact ce asteapta motorul.
-    strat_f <- function(N, S) strategie_fixa(N, S, f = f)
+    strat_f <- function(N, S) {force(f); strategie_fixa(N, S, f = f) } 
 
     rez <- repeta_simulare(strat_f, p = p, n_rep = n_rep, ...)
     # Extragem media indicatorului "prob_detectie_zi" din tabelul rezumat.

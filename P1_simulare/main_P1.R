@@ -49,8 +49,8 @@ P_PRINCIPAL <- 0.005   # scenariul "central" folosit pentru graficele detaliate
 # Parametrii strategiei adaptive (potriviti la MU_CURSE: sub medie verifici
 # putin, peste medie verifici mult).
 F_FIXA   <- 0.05       # procentul strategiei fixe (5%)
-F_MIN    <- 0.05       # procentul minim al strategiei adaptive
-F_MAX    <- 0.30       # procentul maxim al strategiei adaptive
+F_MIN    <- 0.02      # procentul minim al strategiei adaptive
+F_MAX    <- 0.08       # procentul maxim al strategiei adaptive
 N_MIN    <- 300        # sub acest volum -> F_MIN
 N_MAX    <- 500        # peste acest volum -> F_MAX
 
