@@ -168,4 +168,144 @@ server <- function(input, output, session) {
     # Lipim mesajele cu cate un bullet pe linie.
     paste0("- ", mesaje, collapse = "\n")
   })
+
+  # =========================================================================
+  # ===  COMPONENTA 2D  (Z = h(X,Y))  — adaugata de persoana A (Faza 2)  =====
+  # =========================================================================
+
+  # --- (2D-0) Parametrii dinamici in functie de modul de generare ---
+  # Mod "binormal": cere mu_X, mu_Y, sigma_X, sigma_Y, rho.
+  # Mod "independent": cere repartitia + parametrii pentru X si pentru Y.
+  output$parametri_2d_ui <- renderUI({
+    if (input$mod_2d == "binormal") {
+      tagList(
+        h4("Parametrii normalei bivariate"),
+        fluidRow(
+          column(6, numericInput("mu_X", "mu_X", value = 0)),
+          column(6, numericInput("mu_Y", "mu_Y", value = 0))
+        ),
+        fluidRow(
+          column(6, numericInput("sigma_X", "sigma_X (>0)", value = 1)),
+          column(6, numericInput("sigma_Y", "sigma_Y (>0)", value = 1))
+        ),
+        sliderInput("rho", "rho (corelatie, -1 < rho < 1):",
+                    min = -0.99, max = 0.99, value = 0.5, step = 0.01)
+      )
+    } else {
+      # Mod independent: alegi cate o repartitie pentru X si pentru Y.
+      # Pentru simplitate folosim parametri generici p1/p2 per variabila.
+      tagList(
+        h4("Repartitia lui X"),
+        selectInput("dist_X_2d", "X ~", choices = c(
+          "Normala" = "normal", "Exponentiala" = "exp",
+          "Uniforma" = "unif", "Gamma" = "gamma"), selected = "normal"),
+        uiOutput("par_X_2d_ui"),
+        h4("Repartitia lui Y"),
+        selectInput("dist_Y_2d", "Y ~", choices = c(
+          "Normala" = "normal", "Exponentiala" = "exp",
+          "Uniforma" = "unif", "Gamma" = "gamma"), selected = "normal"),
+        uiOutput("par_Y_2d_ui")
+      )
+    }
+  })
+
+  # Parametrii dinamici pentru X si Y in modul independent (refolosim
+  # descrie_parametri din distributii.R, cu id-uri prefixate ca sa nu se
+  # ciocneasca intre X si Y).
+  output$par_X_2d_ui <- renderUI({
+    req(input$mod_2d == "independent", input$dist_X_2d)
+    specs <- descrie_parametri(input$dist_X_2d)
+    do.call(tagList, lapply(specs, function(p)
+      numericInput(paste0("X_", p$id), paste0("X: ", p$eticheta), value = p$valoare)))
+  })
+  output$par_Y_2d_ui <- renderUI({
+    req(input$mod_2d == "independent", input$dist_Y_2d)
+    specs <- descrie_parametri(input$dist_Y_2d)
+    do.call(tagList, lapply(specs, function(p)
+      numericInput(paste0("Y_", p$id), paste0("Y: ", p$eticheta), value = p$valoare)))
+  })
+
+  # --- (2D-1) Validarea pentru modul binormal ---
+  valideaza_2d <- reactive({
+    if (input$mod_2d == "binormal") {
+      # Asteptam ca toate campurile sa existe (UI randat).
+      if (is.null(input$sigma_X) || is.null(input$sigma_Y) || is.null(input$rho))
+        return(NULL)
+      valideaza_parametri_2d(input$sigma_X, input$sigma_Y, input$rho)
+    } else {
+      NULL  # modul independent isi valideaza repartitiile la generare
+    }
+  })
+
+  output$mesaj_validare_2d <- renderText({
+    msg <- valideaza_2d()
+    if (is.null(msg)) "" else msg
+  })
+
+  # --- (2D-2) Simularea 2D (porneste la butonul Simuleaza 2D) ---
+  date_2d <- eventReactive(input$simuleaza_2d, {
+    msg <- valideaza_2d()
+    validate(need(is.null(msg), msg))
+
+    n <- input$n   # refolosim acelasi slider n din sidebar
+
+    if (input$mod_2d == "binormal") {
+      d <- genereaza_pereche("binormal", n,
+                             mu_X = input$mu_X, mu_Y = input$mu_Y,
+                             sigma_X = input$sigma_X, sigma_Y = input$sigma_Y,
+                             rho = input$rho)
+    } else {
+      # Strangem parametrii X si Y din campurile prefixate (X_..., Y_...).
+      specs_X <- descrie_parametri(input$dist_X_2d)
+      par_X <- setNames(lapply(specs_X, function(p) input[[paste0("X_", p$id)]]),
+                        vapply(specs_X, function(p) p$id, ""))
+      specs_Y <- descrie_parametri(input$dist_Y_2d)
+      par_Y <- setNames(lapply(specs_Y, function(p) input[[paste0("Y_", p$id)]]),
+                        vapply(specs_Y, function(p) p$id, ""))
+      d <- genereaza_pereche("independent", n,
+                             dist_X = input$dist_X_2d, par_X = par_X,
+                             dist_Y = input$dist_Y_2d, par_Y = par_Y)
+    }
+
+    # Aplicam transformarea Z = h(X, Y).
+    Z <- aplica_transformare_2d(input$transformare_2d, d$X, d$Y)
+    list(X = d$X, Y = d$Y, Z = Z)
+  })
+
+  # --- (2D-3) Graficele 2D ---
+  # Scatterplot (X, Y): arata vizual corelatia (norul de puncte).
+  output$scatter_2d <- renderPlot({
+    d <- date_2d()
+    ggplot(data.frame(x = d$X, y = d$Y), aes(x = x, y = y)) +
+      geom_point(alpha = 0.25, color = "#2E5A87", size = 0.7) +
+      labs(x = "X", y = "Y") + theme_minimal(base_size = 12)
+  })
+  output$hist_X_2d <- renderPlot({
+    ggplot(data.frame(x = date_2d()$X), aes(x = x)) +
+      geom_histogram(bins = 40, fill = "#2E5A87", color = "white") +
+      labs(x = "X", y = "") + theme_minimal(base_size = 11)
+  })
+  output$hist_Y_2d <- renderPlot({
+    ggplot(data.frame(y = date_2d()$Y), aes(x = y)) +
+      geom_histogram(bins = 40, fill = "#8B2E5D", color = "white") +
+      labs(x = "Y", y = "") + theme_minimal(base_size = 11)
+  })
+  output$hist_Z_2d <- renderPlot({
+    ggplot(data.frame(z = date_2d()$Z), aes(x = z)) +
+      geom_histogram(bins = 40, fill = "#1B7340", color = "white") +
+      labs(x = "Z = h(X, Y)", y = "") + theme_minimal(base_size = 11)
+  })
+
+  # --- (2D-4) Indicatorii 2D (cerinta 5) ---
+  output$stats_2d <- renderText({
+    d <- date_2d()
+    ind <- indicatori_2d(d$X, d$Y, d$Z)
+    paste0(
+      "Media X: ",  round(ind$media_X, 4), "   Var X: ", round(ind$var_X, 4), "\n",
+      "Media Y: ",  round(ind$media_Y, 4), "   Var Y: ", round(ind$var_Y, 4), "\n",
+      "Media Z: ",  round(ind$media_Z, 4), "   Var Z: ", round(ind$var_Z, 4), "\n",
+      "Covarianta(X,Y): ", round(ind$cov_XY, 4), "\n",
+      "Corelatie(X,Y):  ", round(ind$cor_XY, 4)
+    )
+  })
 }

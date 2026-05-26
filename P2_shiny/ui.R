@@ -145,13 +145,60 @@ ui <- fluidPage(
         ),
 
         # --- TAB 2: Transformari 2D (Z = h(X,Y)) ---
-        # PLACEHOLDER: aceasta e felia lui A (Faza 2, transformari_2d.R).
-        # Punem doar scheletul tabului, ca structura sa fie completa.
+        # Controalele 2D stau IN tab (nu in sidebarul comun), fiindca au alti
+        # parametri decat 1D si ar aglomera bara laterala. Layout pe doua zone:
+        # stanga = controale 2D, dreapta = rezultate (scatterplot + histograme).
         tabPanel(
           title = "Transformare 2D",
           br(),
-          helpText("Sectiunea 2D (Z = h(X,Y)) va fi implementata de persoana A ",
-                   "in faza 2 (normala bivariata + cele 4 transformari).")
+          fluidRow(
+            # --- Coloana de controale 2D ---
+            column(4,
+              h4("Mod de generare (X, Y)"),
+              selectInput("mod_2d", "Cum generam perechea:",
+                choices = c(
+                  "Independente (repartitii alese)" = "independent",
+                  "Normala bivariata (cu rho)"      = "binormal"
+                ),
+                selected = "binormal"
+              ),
+
+              # Parametrii apar dinamic in functie de modul ales (renderUI).
+              uiOutput("parametri_2d_ui"),
+
+              h4("Transformarea Z = h(X, Y)"),
+              selectInput("transformare_2d", "Alege transformarea:",
+                choices = c(
+                  "h = X + Y"            = "suma",
+                  "h = X - Y"            = "diferenta",
+                  "h = X * Y"            = "produs",
+                  "h = sqrt(X^2 + Y^2)"  = "norma"
+                ),
+                selected = "suma"
+              ),
+
+              br(),
+              actionButton("simuleaza_2d", "Simuleaza 2D",
+                           class = "btn-primary", width = "100%"),
+              br(), br(),
+              div(style = "color:#b00; font-weight:bold;",
+                  textOutput("mesaj_validare_2d"))
+            ),
+
+            # --- Coloana de rezultate 2D ---
+            column(8,
+              h4("Scatterplot (X, Y)"),
+              plotOutput("scatter_2d", height = "260px"),
+              fluidRow(
+                column(6, h5("Histograma X"), plotOutput("hist_X_2d", height = "200px")),
+                column(6, h5("Histograma Y"), plotOutput("hist_Y_2d", height = "200px"))
+              ),
+              h5("Histograma Z = h(X, Y)"),
+              plotOutput("hist_Z_2d", height = "200px"),
+              h4("Indicatori 2D"),
+              verbatimTextOutput("stats_2d")
+            )
+          )
         )
       )
     )
