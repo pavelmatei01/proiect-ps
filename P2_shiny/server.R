@@ -104,11 +104,15 @@ server <- function(input, output, session) {
     # Intoarce lista cu $y, $n_eliminate, $avertisment.
     rezultat_Y <- aplica_transformare(input$transformare, X)
 
-    # Returnam tot ce au nevoie output-urile.
+    # Returnam tot ce au nevoie output-urile. Stocam si distributie+par, ca
+    # histograma sa poata suprapune densitatea teoretica corespunzatoare
+    # (cerinta enunt: "verificati simularea suprapunand densitatea de probabilitate").
     list(
       X = X,
       Y = rezultat_Y$y,
-      avertisment = rezultat_Y$avertisment
+      avertisment = rezultat_Y$avertisment,
+      distributie = input$distributie,
+      par         = par
     )
   })
 
@@ -123,11 +127,18 @@ server <- function(input, output, session) {
   # =========================================================================
   # (5) GRAFICELE  (cerintele 3, 5, 6)
   # =========================================================================
+  # Histograma X cu DENSITATE TEORETICA suprapusa (linie rosie).
+  # Folosim aes(y = after_stat(density)) ca histograma sa fie pe scara de
+  # densitate, ca sa poata fi comparata direct cu PDF-ul teoretic.
   output$hist_X <- renderPlot({
     d <- date_simulate()
+    f_densitate <- densitatea_repartitiei(d$distributie, d$par)
     ggplot(data.frame(x = d$X), aes(x = x)) +
-      geom_histogram(bins = 40, fill = "#2E5A87", color = "white") +
-      labs(x = "X", y = "Frecventa") +
+      geom_histogram(aes(y = after_stat(density)),
+                     bins = 40, fill = "#2E5A87", color = "white") +
+      stat_function(fun = f_densitate, color = "#C1440E", linewidth = 1.1, n = 401) +
+      labs(x = "X", y = "Densitate",
+           subtitle = "Histograma (empiric) vs. densitatea teoretica (linie rosie)") +
       theme_minimal(base_size = 12)
   })
 
@@ -254,6 +265,12 @@ server <- function(input, output, session) {
                              mu_X = input$mu_X, mu_Y = input$mu_Y,
                              sigma_X = input$sigma_X, sigma_Y = input$sigma_Y,
                              rho = input$rho)
+      # Marginalele unei normale bivariate sunt N(mu_X, sigma_X^2) si N(mu_Y, sigma_Y^2).
+      # Le stocam in formatul uniform (dist + par) ca histogramele sa suprapuna PDF-ul.
+      dist_X_used <- "normal"
+      par_X_used  <- list(mu = input$mu_X, sigma = input$sigma_X)
+      dist_Y_used <- "normal"
+      par_Y_used  <- list(mu = input$mu_Y, sigma = input$sigma_Y)
     } else {
       # Strangem parametrii X si Y din campurile prefixate (X_..., Y_...).
       specs_X <- descrie_parametri(input$dist_X_2d)
@@ -265,11 +282,17 @@ server <- function(input, output, session) {
       d <- genereaza_pereche("independent", n,
                              dist_X = input$dist_X_2d, par_X = par_X,
                              dist_Y = input$dist_Y_2d, par_Y = par_Y)
+      dist_X_used <- input$dist_X_2d
+      par_X_used  <- par_X
+      dist_Y_used <- input$dist_Y_2d
+      par_Y_used  <- par_Y
     }
 
     # Aplicam transformarea Z = h(X, Y).
     Z <- aplica_transformare_2d(input$transformare_2d, d$X, d$Y)
-    list(X = d$X, Y = d$Y, Z = Z)
+    list(X = d$X, Y = d$Y, Z = Z,
+         dist_X = dist_X_used, par_X = par_X_used,
+         dist_Y = dist_Y_used, par_Y = par_Y_used)
   })
 
   # --- (2D-3) Graficele 2D ---
@@ -280,15 +303,26 @@ server <- function(input, output, session) {
       geom_point(alpha = 0.25, color = "#2E5A87", size = 0.7) +
       labs(x = "X", y = "Y") + theme_minimal(base_size = 12)
   })
+  # Histogramele marginale X si Y, cu densitatile teoretice suprapuse (linie rosie).
+  # In modul binormal suprapunem N(mu_X, sigma_X^2) si N(mu_Y, sigma_Y^2);
+  # in modul independent suprapunem PDF-ul repartitiei alese pentru fiecare.
   output$hist_X_2d <- renderPlot({
-    ggplot(data.frame(x = date_2d()$X), aes(x = x)) +
-      geom_histogram(bins = 40, fill = "#2E5A87", color = "white") +
-      labs(x = "X", y = "") + theme_minimal(base_size = 11)
+    d <- date_2d()
+    f_densitate <- densitatea_repartitiei(d$dist_X, d$par_X)
+    ggplot(data.frame(x = d$X), aes(x = x)) +
+      geom_histogram(aes(y = after_stat(density)),
+                     bins = 40, fill = "#2E5A87", color = "white") +
+      stat_function(fun = f_densitate, color = "#C1440E", linewidth = 1.0, n = 401) +
+      labs(x = "X", y = "Densitate") + theme_minimal(base_size = 11)
   })
   output$hist_Y_2d <- renderPlot({
-    ggplot(data.frame(y = date_2d()$Y), aes(x = y)) +
-      geom_histogram(bins = 40, fill = "#8B2E5D", color = "white") +
-      labs(x = "Y", y = "") + theme_minimal(base_size = 11)
+    d <- date_2d()
+    f_densitate <- densitatea_repartitiei(d$dist_Y, d$par_Y)
+    ggplot(data.frame(y = d$Y), aes(x = y)) +
+      geom_histogram(aes(y = after_stat(density)),
+                     bins = 40, fill = "#8B2E5D", color = "white") +
+      stat_function(fun = f_densitate, color = "#C1440E", linewidth = 1.0, n = 401) +
+      labs(x = "Y", y = "Densitate") + theme_minimal(base_size = 11)
   })
   output$hist_Z_2d <- renderPlot({
     ggplot(data.frame(z = date_2d()$Z), aes(x = z)) +

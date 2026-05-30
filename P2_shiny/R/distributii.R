@@ -158,21 +158,23 @@ descrie_parametri <- function(distributie) {
 
 
 # =============================================================================
-# (D) BLOC DE TEST (comentat) - ruleaza in consola ca sa verifici functiile
+# (D) DENSITATEA DE PROBABILITATE  (pentru suprapunere peste histograma — cerinta enunt)
 # =============================================================================
-# set.seed(1)
-# # Generare normala:
-# x <- genereaza_esantion("normal", list(mu = 0, sigma = 1), 10000)
-# cat("Normala: media ~", round(mean(x), 3), " sd ~", round(sd(x), 3), "\n")
+# 
 #
-# # Generare exponentiala (media teoretica = 1/lambda):
-# y <- genereaza_esantion("exp", list(lambda = 2), 10000)
-# cat("Exp(2): media ~", round(mean(y), 3), " (teoretic 0.5)\n")
+# Folosim functiile 'd*' din R-baza:
+#   dnorm  pentru Normala,  dexp pentru Exponentiala,
+#   dunif  pentru Uniforma, dgamma pentru Gamma.
 #
-# # Validare: sigma negativ trebuie respins:
-# print(valideaza_parametri("normal", list(mu = 0, sigma = -1)))  # mesaj eroare
-# print(valideaza_parametri("normal", list(mu = 0, sigma = 1)))   # NULL (ok)
-#
-# # Validare uniforma a >= b:
-# print(valideaza_parametri("unif", list(a = 5, b = 2)))  # mesaj eroare
-# =============================================================================
+# @param distributie  "normal" / "exp" / "unif" / "gamma".
+# @param par          aceeasi lista de parametri ca la genereaza_esantion.
+# @return  o functie f(x) care da densitatea teoretica in punctul x.
+densitatea_repartitiei <- function(distributie, par) {
+  switch(distributie,
+    "normal" = function(x) dnorm(x, mean = par$mu,    sd    = par$sigma),
+    "exp"    = function(x) dexp(x,  rate  = par$lambda),
+    "unif"   = function(x) dunif(x, min   = par$a,    max   = par$b),
+    "gamma"  = function(x) dgamma(x, shape = par$alpha, scale = par$theta),
+    function(x) rep(NA_real_, length(x))   # fallback: necunoscuta -> NA
+  )
+}
